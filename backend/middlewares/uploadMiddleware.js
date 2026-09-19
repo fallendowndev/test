@@ -2,8 +2,16 @@ const multer = require('multer');
 const path = require('path');
 const crypto = require('crypto');
 
-const ALLOWED_MIMES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const ALLOWED_MIMES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'video/mp4',
+  'video/webm',
+  'video/quicktime',
+];
+const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -20,7 +28,7 @@ const fileFilter = (req, file, cb) => {
   if (ALLOWED_MIMES.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Invalid file type. Only JPEG, PNG, WebP, and GIF images are allowed.'), false);
+    cb(new Error('Invalid file type. Allowed formats: JPG, PNG, WebP, GIF images, and MP4, WebM, QuickTime videos.'), false);
   }
 };
 

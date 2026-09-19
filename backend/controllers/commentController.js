@@ -37,7 +37,8 @@ const createReply = async (req, res, next) => {
 const getComments = async (req, res, next) => {
   try {
     const { page, limit } = req.query;
-    const result = await commentService.getCommentTree(req.params.postId, page, limit);
+    const userId = req.user ? req.user._id : null;
+    const result = await commentService.getCommentTree(req.params.postId, userId, page, limit);
 
     res.status(200).json({
       success: true,
@@ -78,4 +79,38 @@ const deleteComment = async (req, res, next) => {
   }
 };
 
-module.exports = { createComment, createReply, getComments, updateComment, deleteComment };
+const toggleLike = async (req, res, next) => {
+  try {
+    const result = await commentService.toggleLike(req.params.commentId, req.user._id);
+
+    res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const togglePin = async (req, res, next) => {
+  try {
+    const result = await commentService.togglePin(req.params.commentId, req.user._id);
+
+    res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = {
+  createComment,
+  createReply,
+  getComments,
+  updateComment,
+  deleteComment,
+  toggleLike,
+  togglePin,
+};

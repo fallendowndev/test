@@ -14,7 +14,7 @@ router.post(
   '/',
   protect,
   createLimiter,
-  upload.single('image'),
+  upload.any(),
   validate(createPostSchema),
   postController.createPost
 );

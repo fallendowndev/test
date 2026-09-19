@@ -20,14 +20,14 @@ export default function Pagination({ page, pages, baseUrl, queryParams = {} }) {
   }
 
   return (
-    <div className="flex items-center justify-center gap-1 mt-6">
+    <div className="flex items-center justify-center gap-1.5 mt-6">
       {page > 1 && (
         <Link
           href={buildUrl(page - 1)}
-          className="flex items-center gap-1 px-3 py-1.5 text-sm border border-[var(--color-border)] rounded hover:bg-[var(--color-surface-hover)] no-underline text-[var(--foreground)]"
+          className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-xl border border-white/5 hover:border-white/10 bg-white/[0.03] hover:bg-white/[0.07] text-zinc-300 hover:text-white transition-colors"
         >
-          <ChevronLeft size={16} />
-          Prev
+          <ChevronLeft size={14} />
+          <span>Prev</span>
         </Link>
       )}
 
@@ -35,10 +35,10 @@ export default function Pagination({ page, pages, baseUrl, queryParams = {} }) {
         <Link
           key={p}
           href={buildUrl(p)}
-          className={`px-3 py-1.5 text-sm rounded no-underline ${
+          className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all ${
             p === page
-              ? 'bg-[var(--color-primary)] text-white font-medium'
-              : 'border border-[var(--color-border)] hover:bg-[var(--color-surface-hover)] text-[var(--foreground)]'
+              ? 'bg-white text-black shadow-sm'
+              : 'border border-white/5 hover:border-white/10 bg-white/[0.03] hover:bg-white/[0.07] text-zinc-400 hover:text-white'
           }`}
         >
           {p}
@@ -48,10 +48,10 @@ export default function Pagination({ page, pages, baseUrl, queryParams = {} }) {
       {page < pages && (
         <Link
           href={buildUrl(page + 1)}
-          className="flex items-center gap-1 px-3 py-1.5 text-sm border border-[var(--color-border)] rounded hover:bg-[var(--color-surface-hover)] no-underline text-[var(--foreground)]"
+          className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-xl border border-white/5 hover:border-white/10 bg-white/[0.03] hover:bg-white/[0.07] text-zinc-300 hover:text-white transition-colors"
         >
-          Next
-          <ChevronRight size={16} />
+          <span>Next</span>
+          <ChevronRight size={14} />
         </Link>
       )}
     </div>

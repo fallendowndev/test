@@ -56,16 +56,18 @@ export default function PostDetailPage() {
 
   if (error || !post) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-12 text-center">
-        <div className="card bg-white p-8 rounded border border-red-200">
-          <AlertTriangle className="w-12 h-12 mx-auto mb-3 text-red-500" />
-          <h2 className="text-lg font-bold text-[#1c1c1c] mb-2">{error || 'Post not found'}</h2>
-          <p className="text-xs text-[#7c7c7c] mb-4">The post you are looking for might have been deleted or does not exist.</p>
+      <div className="max-w-xl mx-auto px-4 py-16 text-center">
+        <div className="bg-[#0d0d11] p-8 rounded-2xl border border-white/5 space-y-4">
+          <div className="w-12 h-12 rounded-2xl bg-red-500/10 text-red-400 mx-auto flex items-center justify-center">
+            <AlertTriangle size={24} />
+          </div>
+          <h2 className="text-lg font-bold text-zinc-100">{error || 'Post not found'}</h2>
+          <p className="text-xs text-zinc-400">The discussion you are looking for does not exist or has been removed.</p>
           <Link
             href="/"
-            className="inline-block px-5 py-2 rounded-full bg-[#0079d3] hover:bg-[#006cbd] text-white text-sm font-semibold"
+            className="inline-block px-5 py-2 rounded-full bg-white text-black text-xs font-bold hover:bg-zinc-200 transition-colors"
           >
-            Back to Home Feed
+            Back to Feed
           </Link>
         </div>
       </div>
@@ -75,19 +77,19 @@ export default function PostDetailPage() {
   const author = post.author || {};
 
   return (
-    <div className="max-w-5xl mx-auto px-2 md:px-4 py-4">
-      <div className="mb-3">
+    <div className="max-w-5xl mx-auto py-2 space-y-4">
+      <div>
         <Link
           href="/"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#7c7c7c] hover:text-[#1c1c1c] transition-colors"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/5 hover:border-white/10 bg-white/[0.03] hover:bg-white/[0.08] text-xs font-semibold text-zinc-400 hover:text-white transition-colors"
         >
-          <ArrowLeft size={16} />
+          <ArrowLeft size={14} />
           <span>Back to Feed</span>
         </Link>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6">
-        <div className="flex-1 min-w-0 space-y-4">
+        <div className="flex-1 min-w-0 bg-[#0d0d11] rounded-2xl border border-white/5 p-4 sm:p-5 space-y-3">
           <PostCard
             post={post}
             isDetail={true}
@@ -96,40 +98,41 @@ export default function PostDetailPage() {
 
           <CommentTree
             postId={post._id}
+            postOwnerId={author._id}
             initialCommentCount={post.commentCount || 0}
           />
         </div>
 
         <aside className="w-full lg:w-72 space-y-4 shrink-0">
-          <div className="card bg-white rounded border border-[#ccc] p-4">
-            <h3 className="text-xs font-bold text-[#7c7c7c] uppercase tracking-wider mb-3">
+          <div className="bg-[#0d0d11] rounded-2xl border border-white/5 p-5 space-y-4">
+            <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
               About the Author
             </h3>
-            <div className="flex items-center gap-3 mb-3">
-              <Avatar src={author.avatar} username={author.username} size={48} />
+            <div className="flex items-center gap-3">
+              <Avatar src={author.avatar} username={author.username} size={44} />
               <div className="min-w-0">
                 <Link
                   href={`/profile/${author.username}`}
-                  className="font-bold text-sm text-[#1c1c1c] hover:underline block truncate"
+                  className="font-bold text-sm text-zinc-100 hover:text-white block truncate transition-colors"
                 >
                   {author.displayName || author.username}
                 </Link>
-                <span className="text-xs text-[#7c7c7c] block truncate">
+                <span className="text-xs text-zinc-500 block truncate">
                   u/{author.username}
                 </span>
               </div>
             </div>
 
             {author.bio && (
-              <p className="text-xs text-[#7c7c7c] leading-relaxed mb-3 line-clamp-3">
+              <p className="text-xs text-zinc-400 leading-relaxed line-clamp-3">
                 {author.bio}
               </p>
             )}
 
-            <div className="pt-3 border-t border-[#edeff1] text-xs text-[#7c7c7c] space-y-1">
-              <div>
-                <span>Posted: </span>
-                <span className="font-semibold text-[#1c1c1c]">
+            <div className="pt-3 border-t border-white/5 text-xs text-zinc-500 space-y-1">
+              <div className="flex justify-between">
+                <span>Published</span>
+                <span className="font-semibold text-zinc-300">
                   {formatRelativeTime(post.createdAt)}
                 </span>
               </div>
@@ -137,9 +140,9 @@ export default function PostDetailPage() {
 
             <Link
               href={`/profile/${author.username}`}
-              className="mt-4 block w-full text-center py-1.5 px-3 rounded-full border border-[#0079d3] text-[#0079d3] hover:bg-[#0079d3]/10 text-xs font-semibold transition-colors"
+              className="block w-full text-center py-2 px-3 rounded-xl border border-white/10 hover:border-white/25 bg-white/[0.02] hover:bg-white/5 text-zinc-200 hover:text-white text-xs font-semibold transition-all"
             >
-              View Profile
+              View Author Profile
             </Link>
           </div>
         </aside>

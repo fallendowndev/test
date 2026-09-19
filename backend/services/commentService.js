@@ -44,7 +44,7 @@ const createReply = async (parentCommentId, userId, content) => {
   return comment.populate('author', 'username displayName avatar');
 };
 
-const getCommentTree = async (postId, page = 1, limit = 50) => {
+const getCommentTree = async (postId, userId, page = 1, limit = 50) => {
   page = Math.max(1, parseInt(page, 10) || 1);
   limit = Math.min(100, Math.max(1, parseInt(limit, 10) || 50));
 
@@ -55,7 +55,7 @@ const getCommentTree = async (postId, page = 1, limit = 50) => {
 
   const allComments = await Comment.find({ post: postId })
     .populate('author', 'username displayName avatar')
-    .sort({ createdAt: 1 })
+    .sort({ isPinned: -1, createdAt: 1 })
     .lean();
 
   const commentMap = {};
@@ -63,6 +63,10 @@ const getCommentTree = async (postId, page = 1, limit = 50) => {
 
   allComments.forEach((comment) => {
     comment.replies = [];
+    comment.likeCount = comment.likes ? comment.likes.length : 0;
+    comment.isLiked = userId
+      ? (comment.likes || []).some((id) => id.toString() === userId.toString())
+      : false;
 
     if (comment.deletedAt) {
       comment.content = null;
@@ -151,4 +155,77 @@ const softDelete = async (commentId, userId) => {
   return { deleted: true };
 };
 
-module.exports = { createComment, createReply, getCommentTree, update, softDelete };
+// Toggle like on a comment
+const toggleLike = async (commentId, userId) => {
+  const comment = await Comment.findById(commentId);
+
+  if (!comment) {
+    throw new AppError('Comment not found.', 404);
+  }
+
+  if (comment.deletedAt) {
+    throw new AppError('Cannot like a deleted comment.', 400);
+  }
+
+  const alreadyLiked = comment.likes.some((id) => id.toString() === userId.toString());
+
+  if (alreadyLiked) {
+    comment.likes = comment.likes.filter((id) => id.toString() !== userId.toString());
+  } else {
+    comment.likes.push(userId);
+  }
+
+  await comment.save();
+
+  return {
+    likeCount: comment.likes.length,
+    isLiked: !alreadyLiked,
+  };
+};
+
+// Pin/unpin a comment — only the POST owner can do this
+const togglePin = async (commentId, userId) => {
+  const comment = await Comment.findById(commentId).populate('post');
+
+  if (!comment) {
+    throw new AppError('Comment not found.', 404);
+  }
+
+  if (comment.deletedAt) {
+    throw new AppError('Cannot pin a deleted comment.', 400);
+  }
+
+  const post = comment.post;
+  if (!post) {
+    throw new AppError('Post not found.', 404);
+  }
+
+  if (post.author.toString() !== userId.toString()) {
+    throw new AppError('Only the post owner can pin comments.', 403);
+  }
+
+  const willPin = !comment.isPinned;
+
+  // Unpin any previously pinned comment on this post
+  if (willPin) {
+    await Comment.updateMany(
+      { post: post._id, isPinned: true },
+      { $set: { isPinned: false } }
+    );
+  }
+
+  comment.isPinned = willPin;
+  await comment.save();
+
+  return { isPinned: comment.isPinned };
+};
+
+module.exports = {
+  createComment,
+  createReply,
+  getCommentTree,
+  update,
+  softDelete,
+  toggleLike,
+  togglePin,
+};

@@ -3,11 +3,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
 import { api } from '../lib/api';
 import Avatar from '../components/Avatar';
 import LoadingSpinner from '../components/LoadingSpinner';
-import Pagination from '../components/Pagination';
 import {
   LayoutDashboard,
   Users,
@@ -18,7 +19,6 @@ import {
   Shield,
   ShieldAlert,
   CheckCircle,
-  XCircle,
   Search,
   RefreshCw,
   ExternalLink,
@@ -32,6 +32,7 @@ import {
 
 export default function AdminDashboardPage() {
   const { user, loading: authLoading } = useAuth();
+  const { toast } = useNotification();
   const router = useRouter();
 
   const [activeTab, setActiveTab] = useState('overview');
@@ -60,15 +61,6 @@ export default function AdminDashboardPage() {
   const [reportsFilter, setReportsFilter] = useState('pending');
   const [reportsLoading, setReportsLoading] = useState(false);
 
-  const [notification, setNotification] = useState(null);
-
-  const showNotification = (type, message) => {
-    setNotification({ type, message });
-    setTimeout(() => {
-      setNotification(null);
-    }, 3500);
-  };
-
   const fetchStats = useCallback(async () => {
     try {
       setStatsLoading(true);
@@ -77,11 +69,11 @@ export default function AdminDashboardPage() {
         setStats(res.data);
       }
     } catch (err) {
-      showNotification('error', err.message || 'Failed to load statistics');
+      toast.error(err.message || 'Failed to load stats');
     } finally {
       setStatsLoading(false);
     }
-  }, []);
+  }, [toast]);
 
   const fetchUsers = useCallback(async (p = 1) => {
     try {
@@ -98,11 +90,11 @@ export default function AdminDashboardPage() {
         setUsersPages(res.data.pages || 1);
       }
     } catch (err) {
-      showNotification('error', err.message || 'Failed to load users');
+      toast.error(err.message || 'Failed to load users');
     } finally {
       setUsersLoading(false);
     }
-  }, [usersSearch, usersRoleFilter]);
+  }, [usersSearch, usersRoleFilter, toast]);
 
   const fetchPosts = useCallback(async (p = 1) => {
     try {
@@ -118,11 +110,11 @@ export default function AdminDashboardPage() {
         setPostsPages(res.data.pages || 1);
       }
     } catch (err) {
-      showNotification('error', err.message || 'Failed to load posts');
+      toast.error(err.message || 'Failed to load posts');
     } finally {
       setPostsLoading(false);
     }
-  }, [postsSearch]);
+  }, [postsSearch, toast]);
 
   const fetchReports = useCallback(async (p = 1) => {
     try {
@@ -138,11 +130,11 @@ export default function AdminDashboardPage() {
         setReportsPages(res.data.pages || 1);
       }
     } catch (err) {
-      showNotification('error', err.message || 'Failed to load reports');
+      toast.error(err.message || 'Failed to load reports');
     } finally {
       setReportsLoading(false);
     }
-  }, [reportsFilter]);
+  }, [reportsFilter, toast]);
 
   useEffect(() => {
     if (user && user.role === 'admin') {
@@ -168,16 +160,16 @@ export default function AdminDashboardPage() {
 
   if (!user || user.role !== 'admin') {
     return (
-      <div className="max-w-md mx-auto px-4 py-16 text-center">
-        <div className="card bg-white p-8 rounded-xl border border-red-200 shadow-sm">
-          <ShieldAlert className="w-16 h-16 mx-auto mb-4 text-red-500" />
-          <h1 className="text-xl font-bold text-gray-900 mb-2">Access Denied</h1>
-          <p className="text-sm text-gray-600 mb-6">
-            Administrator privileges are required to access this dashboard.
+      <div className="max-w-md mx-auto px-4 py-20 text-center">
+        <div className="bg-[#0d0d11] p-8 rounded-2xl border border-red-500/20 shadow-2xl space-y-4">
+          <ShieldAlert className="w-14 h-14 mx-auto text-red-500" />
+          <h1 className="text-xl font-bold text-zinc-100">Access Restricted</h1>
+          <p className="text-xs text-zinc-400">
+            Administrator credentials are required to access this dashboard.
           </p>
           <Link
             href="/"
-            className="inline-block px-5 py-2.5 rounded-full bg-[#0079d3] text-white text-sm font-semibold hover:bg-[#006cbd] transition-colors"
+            className="inline-block px-5 py-2.5 rounded-full bg-white text-black text-xs font-bold hover:bg-zinc-200 transition-colors"
           >
             Return to Feed
           </Link>
@@ -198,19 +190,19 @@ export default function AdminDashboardPage() {
         body: { role: newRole },
       });
       if (res.success) {
-        showNotification('success', `Role updated to ${newRole} for @${targetUser.username}`);
+        toast.success(`Role changed to ${newRole} for @${targetUser.username}`);
         fetchUsers(usersPage);
         fetchStats();
       }
     } catch (err) {
-      showNotification('error', err.message || 'Failed to update user role');
+      toast.error(err.message || 'Failed to update user role');
     }
   };
 
   const handleDeleteUser = async (targetUser) => {
     if (
       !confirm(
-        `WARNING: Deleting @${targetUser.username} will delete all their posts, comments, votes, and records permanently. Proceed?`
+        `WARNING: Deleting @${targetUser.username} will delete all their posts, comments, and records. Proceed?`
       )
     ) {
       return;
@@ -219,12 +211,12 @@ export default function AdminDashboardPage() {
     try {
       const res = await api(`/admin/users/${targetUser._id}`, { method: 'DELETE' });
       if (res.success) {
-        showNotification('success', `User @${targetUser.username} and all content removed.`);
+        toast.success(`User @${targetUser.username} removed.`);
         fetchUsers(usersPage);
         fetchStats();
       }
     } catch (err) {
-      showNotification('error', err.message || 'Failed to delete user');
+      toast.error(err.message || 'Failed to delete user');
     }
   };
 
@@ -236,12 +228,12 @@ export default function AdminDashboardPage() {
     try {
       const res = await api(`/admin/posts/${postId}`, { method: 'DELETE' });
       if (res.success) {
-        showNotification('success', 'Post deleted successfully by admin.');
+        toast.success('Post removed by administrator');
         fetchPosts(postsPage);
         fetchStats();
       }
     } catch (err) {
-      showNotification('error', err.message || 'Failed to delete post');
+      toast.error(err.message || 'Failed to delete post');
     }
   };
 
@@ -252,29 +244,29 @@ export default function AdminDashboardPage() {
         body: { status },
       });
       if (res.success) {
-        showNotification('success', `Report marked as ${status}`);
+        toast.success(`Report marked as ${status}`);
         fetchReports(reportsPage);
         fetchStats();
       }
     } catch (err) {
-      showNotification('error', err.message || 'Failed to update report');
+      toast.error(err.message || 'Failed to update report');
     }
   };
 
   const handleDeleteReportTarget = async (reportId) => {
-    if (!confirm('Are you sure you want to remove this reported content from the platform?')) {
+    if (!confirm('Are you sure you want to delete this reported content?')) {
       return;
     }
 
     try {
       const res = await api(`/admin/reports/${reportId}/target`, { method: 'DELETE' });
       if (res.success) {
-        showNotification('success', 'Reported content removed and report resolved.');
+        toast.success('Reported content deleted and report resolved.');
         fetchReports(reportsPage);
         fetchStats();
       }
     } catch (err) {
-      showNotification('error', err.message || 'Failed to remove reported content');
+      toast.error(err.message || 'Failed to remove content');
     }
   };
 
@@ -289,34 +281,21 @@ export default function AdminDashboardPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-      {notification && (
-        <div
-          className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-lg shadow-xl flex items-center gap-2 text-sm font-medium ${
-            notification.type === 'success'
-              ? 'bg-green-600 text-white'
-              : 'bg-red-600 text-white'
-          }`}
-        >
-          {notification.type === 'success' ? <CheckCircle size={18} /> : <XCircle size={18} />}
-          <span>{notification.message}</span>
-        </div>
-      )}
-
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#edeff1]">
+    <div className="max-w-7xl mx-auto py-3 space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/5">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-gradient-to-tr from-[#0079d3] to-[#005596] rounded-xl flex items-center justify-center text-white shadow-sm">
-            <Shield size={24} />
+          <div className="w-11 h-11 bg-white text-black rounded-2xl flex items-center justify-center shadow-lg">
+            <Shield size={22} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-[#1c1c1c] flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-black text-zinc-100 flex items-center gap-2.5">
               <span>Admin Dashboard</span>
-              <span className="text-xs bg-[#0079d3]/10 text-[#0079d3] font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                Full Access
+              <span className="text-[10px] bg-white/10 text-zinc-300 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                Full Privileges
               </span>
             </h1>
-            <p className="text-xs text-[#7c7c7c]">
-              Comprehensive control center for user management, system metrics, and content moderation.
+            <p className="text-xs text-zinc-500">
+              OLED platform management for users, system metrics, and content moderation.
             </p>
           </div>
         </div>
@@ -328,38 +307,38 @@ export default function AdminDashboardPage() {
             if (activeTab === 'posts') fetchPosts(postsPage);
             if (activeTab === 'reports') fetchReports(reportsPage);
           }}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-[#ccc] hover:bg-white text-xs font-semibold text-[#1c1c1c] transition-colors shadow-sm self-start sm:self-auto"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-white/10 hover:border-white/20 bg-white/[0.03] hover:bg-white/[0.06] text-xs font-semibold text-zinc-300 hover:text-white transition-colors cursor-pointer self-start sm:self-auto"
         >
-          <RefreshCw size={14} className={statsLoading ? 'animate-spin' : ''} />
+          <RefreshCw size={13} className={statsLoading ? 'animate-spin' : ''} />
           <span>Refresh Data</span>
         </button>
       </div>
 
-      <div className="flex border-b border-[#edeff1] space-x-1 sm:space-x-4 overflow-x-auto">
+      <div className="flex border-b border-white/5 space-x-2 overflow-x-auto pb-2">
         <button
           onClick={() => setActiveTab('overview')}
-          className={`flex items-center gap-2 py-3 px-3 sm:px-4 border-b-2 text-sm font-semibold whitespace-nowrap transition-colors ${
+          className={`flex items-center gap-2 py-2 px-4 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
             activeTab === 'overview'
-              ? 'border-[#0079d3] text-[#0079d3]'
-              : 'border-transparent text-[#7c7c7c] hover:text-[#1c1c1c]'
+              ? 'bg-white text-black shadow-sm'
+              : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5'
           }`}
         >
-          <LayoutDashboard size={16} />
+          <LayoutDashboard size={14} />
           <span>Overview</span>
         </button>
 
         <button
           onClick={() => setActiveTab('users')}
-          className={`flex items-center gap-2 py-3 px-3 sm:px-4 border-b-2 text-sm font-semibold whitespace-nowrap transition-colors ${
+          className={`flex items-center gap-2 py-2 px-4 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
             activeTab === 'users'
-              ? 'border-[#0079d3] text-[#0079d3]'
-              : 'border-transparent text-[#7c7c7c] hover:text-[#1c1c1c]'
+              ? 'bg-white text-black shadow-sm'
+              : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5'
           }`}
         >
-          <Users size={16} />
+          <Users size={14} />
           <span>Users</span>
           {stats?.metrics?.totalUsers !== undefined && (
-            <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${activeTab === 'users' ? 'bg-black/20 text-black' : 'bg-white/10 text-zinc-300'}`}>
               {stats.metrics.totalUsers}
             </span>
           )}
@@ -367,16 +346,16 @@ export default function AdminDashboardPage() {
 
         <button
           onClick={() => setActiveTab('posts')}
-          className={`flex items-center gap-2 py-3 px-3 sm:px-4 border-b-2 text-sm font-semibold whitespace-nowrap transition-colors ${
+          className={`flex items-center gap-2 py-2 px-4 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
             activeTab === 'posts'
-              ? 'border-[#0079d3] text-[#0079d3]'
-              : 'border-transparent text-[#7c7c7c] hover:text-[#1c1c1c]'
+              ? 'bg-white text-black shadow-sm'
+              : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5'
           }`}
         >
-          <FileText size={16} />
+          <FileText size={14} />
           <span>Posts</span>
           {stats?.metrics?.totalPosts !== undefined && (
-            <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${activeTab === 'posts' ? 'bg-black/20 text-black' : 'bg-white/10 text-zinc-300'}`}>
               {stats.metrics.totalPosts}
             </span>
           )}
@@ -384,16 +363,16 @@ export default function AdminDashboardPage() {
 
         <button
           onClick={() => setActiveTab('reports')}
-          className={`flex items-center gap-2 py-3 px-3 sm:px-4 border-b-2 text-sm font-semibold whitespace-nowrap transition-colors ${
+          className={`flex items-center gap-2 py-2 px-4 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
             activeTab === 'reports'
-              ? 'border-[#0079d3] text-[#0079d3]'
-              : 'border-transparent text-[#7c7c7c] hover:text-[#1c1c1c]'
+              ? 'bg-white text-black shadow-sm'
+              : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5'
           }`}
         >
-          <AlertTriangle size={16} />
-          <span>Moderation Reports</span>
+          <AlertTriangle size={14} />
+          <span>Moderation</span>
           {stats?.metrics?.pendingReports > 0 && (
-            <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-bold">
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-red-500 text-white font-bold">
               {stats.metrics.pendingReports}
             </span>
           )}
@@ -402,117 +381,117 @@ export default function AdminDashboardPage() {
 
       {activeTab === 'overview' && (
         <div className="space-y-6">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            <div className="card bg-white p-4 rounded-xl border border-[#ccc] shadow-sm">
-              <div className="flex items-center justify-between text-[#7c7c7c] mb-2">
-                <span className="text-xs font-semibold uppercase">Users</span>
-                <Users size={18} className="text-[#0079d3]" />
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
+            <div className="bg-[#0d0d11] p-4 rounded-2xl border border-white/5 space-y-1">
+              <div className="flex items-center justify-between text-zinc-500">
+                <span className="text-[11px] font-bold uppercase tracking-wider">Users</span>
+                <Users size={16} className="text-zinc-300" />
               </div>
-              <div className="text-2xl font-black text-[#1c1c1c]">
+              <div className="text-2xl font-black text-zinc-100">
                 {stats?.metrics?.totalUsers ?? '...'}
               </div>
-              <div className="text-[11px] text-[#7c7c7c] mt-1">Registered members</div>
+              <div className="text-[10px] text-zinc-500">Total accounts</div>
             </div>
 
-            <div className="card bg-white p-4 rounded-xl border border-[#ccc] shadow-sm">
-              <div className="flex items-center justify-between text-[#7c7c7c] mb-2">
-                <span className="text-xs font-semibold uppercase">Posts</span>
-                <FileText size={18} className="text-[#0079d3]" />
+            <div className="bg-[#0d0d11] p-4 rounded-2xl border border-white/5 space-y-1">
+              <div className="flex items-center justify-between text-zinc-500">
+                <span className="text-[11px] font-bold uppercase tracking-wider">Posts</span>
+                <FileText size={16} className="text-zinc-300" />
               </div>
-              <div className="text-2xl font-black text-[#1c1c1c]">
+              <div className="text-2xl font-black text-zinc-100">
                 {stats?.metrics?.totalPosts ?? '...'}
               </div>
-              <div className="text-[11px] text-[#7c7c7c] mt-1">Community posts</div>
+              <div className="text-[10px] text-zinc-500">Discussions</div>
             </div>
 
-            <div className="card bg-white p-4 rounded-xl border border-[#ccc] shadow-sm">
-              <div className="flex items-center justify-between text-[#7c7c7c] mb-2">
-                <span className="text-xs font-semibold uppercase">Comments</span>
-                <MessageSquare size={18} className="text-[#0079d3]" />
+            <div className="bg-[#0d0d11] p-4 rounded-2xl border border-white/5 space-y-1">
+              <div className="flex items-center justify-between text-zinc-500">
+                <span className="text-[11px] font-bold uppercase tracking-wider">Comments</span>
+                <MessageSquare size={16} className="text-cyan-400" />
               </div>
-              <div className="text-2xl font-black text-[#1c1c1c]">
+              <div className="text-2xl font-black text-zinc-100">
                 {stats?.metrics?.totalComments ?? '...'}
               </div>
-              <div className="text-[11px] text-[#7c7c7c] mt-1">Discussion replies</div>
+              <div className="text-[10px] text-zinc-500">Replies</div>
             </div>
 
-            <div className="card bg-white p-4 rounded-xl border border-[#ccc] shadow-sm">
-              <div className="flex items-center justify-between text-[#7c7c7c] mb-2">
-                <span className="text-xs font-semibold uppercase">Votes</span>
-                <ThumbsUp size={18} className="text-[#ff4500]" />
+            <div className="bg-[#0d0d11] p-4 rounded-2xl border border-white/5 space-y-1">
+              <div className="flex items-center justify-between text-zinc-500">
+                <span className="text-[11px] font-bold uppercase tracking-wider">Votes</span>
+                <ThumbsUp size={16} className="text-[#ff542e]" />
               </div>
-              <div className="text-2xl font-black text-[#1c1c1c]">
+              <div className="text-2xl font-black text-zinc-100">
                 {stats?.metrics?.totalVotes ?? '...'}
               </div>
-              <div className="text-[11px] text-[#7c7c7c] mt-1">Community ratings</div>
+              <div className="text-[10px] text-zinc-500">Ratings</div>
             </div>
 
-            <div className="card bg-white p-4 rounded-xl border border-[#ccc] shadow-sm">
-              <div className="flex items-center justify-between text-[#7c7c7c] mb-2">
-                <span className="text-xs font-semibold uppercase">Reports</span>
-                <AlertTriangle size={18} className="text-amber-500" />
+            <div className="bg-[#0d0d11] p-4 rounded-2xl border border-white/5 space-y-1">
+              <div className="flex items-center justify-between text-zinc-500">
+                <span className="text-[11px] font-bold uppercase tracking-wider">Reports</span>
+                <AlertTriangle size={16} className="text-amber-400" />
               </div>
-              <div className="text-2xl font-black text-[#1c1c1c]">
+              <div className="text-2xl font-black text-zinc-100">
                 {stats?.metrics?.totalReports ?? '...'}
               </div>
-              <div className="text-[11px] text-[#7c7c7c] mt-1">Flagged total</div>
+              <div className="text-[10px] text-zinc-500">Total flags</div>
             </div>
 
-            <div className="card bg-white p-4 rounded-xl border border-[#ccc] shadow-sm">
-              <div className="flex items-center justify-between text-[#7c7c7c] mb-2">
-                <span className="text-xs font-semibold uppercase">Pending</span>
-                <AlertTriangle size={18} className="text-red-500" />
+            <div className="bg-[#0d0d11] p-4 rounded-2xl border border-white/5 space-y-1">
+              <div className="flex items-center justify-between text-zinc-500">
+                <span className="text-[11px] font-bold uppercase tracking-wider">Pending</span>
+                <AlertTriangle size={16} className="text-red-400" />
               </div>
-              <div className="text-2xl font-black text-red-600">
+              <div className="text-2xl font-black text-red-400">
                 {stats?.metrics?.pendingReports ?? '...'}
               </div>
-              <div className="text-[11px] text-red-500 mt-1 font-medium">Needs review</div>
+              <div className="text-[10px] text-red-500 font-semibold">Needs action</div>
             </div>
           </div>
 
-          <div className="card bg-white p-5 rounded-xl border border-[#ccc] shadow-sm">
-            <h2 className="text-sm font-bold text-[#1c1c1c] uppercase tracking-wider mb-4 flex items-center gap-2">
-              <Server size={18} className="text-[#0079d3]" />
-              <span>Server &amp; Platform Health</span>
+          <div className="bg-[#0d0d11] p-5 rounded-2xl border border-white/5">
+            <h2 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+              <Server size={15} className="text-zinc-300" />
+              <span>System &amp; Server Health</span>
             </h2>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="p-3 bg-[#f8f9fa] rounded-lg">
-                <div className="text-xs text-[#7c7c7c] flex items-center gap-1.5 mb-1">
-                  <Clock size={14} />
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="p-3 bg-[#141419] rounded-xl border border-white/5">
+                <div className="text-[11px] text-zinc-500 flex items-center gap-1.5 mb-1">
+                  <Clock size={13} />
                   <span>Uptime</span>
                 </div>
-                <div className="text-sm font-bold text-[#1c1c1c]">
+                <div className="text-xs sm:text-sm font-bold text-zinc-200">
                   {stats?.system ? formatUptime(stats.system.uptimeSeconds) : '...'}
                 </div>
               </div>
 
-              <div className="p-3 bg-[#f8f9fa] rounded-lg">
-                <div className="text-xs text-[#7c7c7c] flex items-center gap-1.5 mb-1">
-                  <Cpu size={14} />
-                  <span>Node Version</span>
+              <div className="p-3 bg-[#141419] rounded-xl border border-white/5">
+                <div className="text-[11px] text-zinc-500 flex items-center gap-1.5 mb-1">
+                  <Cpu size={13} />
+                  <span>Node.js</span>
                 </div>
-                <div className="text-sm font-bold text-[#1c1c1c]">
+                <div className="text-xs sm:text-sm font-bold text-zinc-200">
                   {stats?.system?.nodeVersion || '...'}
                 </div>
               </div>
 
-              <div className="p-3 bg-[#f8f9fa] rounded-lg">
-                <div className="text-xs text-[#7c7c7c] flex items-center gap-1.5 mb-1">
-                  <Server size={14} />
-                  <span>Memory (Heap / RSS)</span>
+              <div className="p-3 bg-[#141419] rounded-xl border border-white/5">
+                <div className="text-[11px] text-zinc-500 flex items-center gap-1.5 mb-1">
+                  <Server size={13} />
+                  <span>Memory</span>
                 </div>
-                <div className="text-sm font-bold text-[#1c1c1c]">
-                  {stats?.system ? `${stats.system.memoryHeapMb} MB / ${stats.system.memoryRssMb} MB` : '...'}
+                <div className="text-xs sm:text-sm font-bold text-zinc-200">
+                  {stats?.system ? `${stats.system.memoryHeapMb}MB / ${stats.system.memoryRssMb}MB` : '...'}
                 </div>
               </div>
 
-              <div className="p-3 bg-[#f8f9fa] rounded-lg">
-                <div className="text-xs text-[#7c7c7c] flex items-center gap-1.5 mb-1">
-                  <Shield size={14} />
+              <div className="p-3 bg-[#141419] rounded-xl border border-white/5">
+                <div className="text-[11px] text-zinc-500 flex items-center gap-1.5 mb-1">
+                  <Shield size={13} />
                   <span>Environment</span>
                 </div>
-                <div className="text-sm font-bold text-[#1c1c1c] capitalize">
+                <div className="text-xs sm:text-sm font-bold text-zinc-200 capitalize">
                   {stats?.system?.environment || '...'}
                 </div>
               </div>
@@ -520,63 +499,63 @@ export default function AdminDashboardPage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="card bg-white p-5 rounded-xl border border-[#ccc] shadow-sm">
-              <h3 className="text-sm font-bold text-[#1c1c1c] mb-3 pb-2 border-b border-[#edeff1] flex items-center justify-between">
-                <span>Recent Registrations</span>
+            <div className="bg-[#0d0d11] p-5 rounded-2xl border border-white/5 space-y-3">
+              <h3 className="text-xs font-bold text-zinc-300 uppercase tracking-wider pb-2 border-b border-white/5 flex items-center justify-between">
+                <span>Recent Members</span>
                 <button
                   onClick={() => setActiveTab('users')}
-                  className="text-xs text-[#0079d3] hover:underline font-normal"
+                  className="text-[11px] text-zinc-300 hover:underline font-normal cursor-pointer"
                 >
                   View all
                 </button>
               </h3>
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 {stats?.recentUsers?.length ? (
                   stats.recentUsers.map((u) => (
-                    <div key={u._id} className="flex items-center justify-between text-xs">
+                    <div key={u._id} className="flex items-center justify-between text-xs py-1">
                       <div className="flex items-center gap-2 min-w-0">
                         <Avatar src={u.avatar} username={u.username} size={28} />
                         <div className="min-w-0">
-                          <Link href={`/profile/${u.username}`} className="font-semibold text-[#1c1c1c] hover:underline block truncate">
+                          <Link href={`/profile/${u.username}`} className="font-semibold text-zinc-200 hover:text-white block truncate">
                             {u.displayName || u.username}
                           </Link>
-                          <span className="text-[#7c7c7c] block truncate">u/{u.username}</span>
+                          <span className="text-zinc-500 block truncate text-[11px]">u/{u.username}</span>
                         </div>
                       </div>
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                        u.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                        u.role === 'admin' ? 'bg-white/10 text-zinc-200' : 'bg-white/5 text-zinc-400'
                       }`}>
                         {u.role}
                       </span>
                     </div>
                   ))
                 ) : (
-                  <p className="text-xs text-[#7c7c7c]">No users found</p>
+                  <p className="text-xs text-zinc-500 py-4 text-center">No users registered</p>
                 )}
               </div>
             </div>
 
-            <div className="card bg-white p-5 rounded-xl border border-[#ccc] shadow-sm">
-              <h3 className="text-sm font-bold text-[#1c1c1c] mb-3 pb-2 border-b border-[#edeff1] flex items-center justify-between">
+            <div className="bg-[#0d0d11] p-5 rounded-2xl border border-white/5 space-y-3">
+              <h3 className="text-xs font-bold text-zinc-300 uppercase tracking-wider pb-2 border-b border-white/5 flex items-center justify-between">
                 <span>Recent Posts</span>
                 <button
                   onClick={() => setActiveTab('posts')}
-                  className="text-xs text-[#0079d3] hover:underline font-normal"
+                  className="text-[11px] text-zinc-300 hover:underline font-normal cursor-pointer"
                 >
                   View all
                 </button>
               </h3>
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 {stats?.recentPosts?.length ? (
                   stats.recentPosts.map((p) => (
-                    <div key={p._id} className="text-xs space-y-1">
+                    <div key={p._id} className="text-xs space-y-1 py-1">
                       <Link
                         href={`/post/${p._id}`}
-                        className="font-semibold text-[#1c1c1c] hover:text-[#0079d3] line-clamp-1"
+                        className="font-semibold text-zinc-200 hover:text-white line-clamp-1 transition-colors"
                       >
                         {p.title}
                       </Link>
-                      <div className="flex items-center gap-2 text-[#7c7c7c] text-[11px]">
+                      <div className="flex items-center gap-2 text-zinc-500 text-[11px]">
                         <span>u/{p.author?.username || 'unknown'}</span>
                         <span>•</span>
                         <span>{p.score || 0} votes</span>
@@ -586,43 +565,43 @@ export default function AdminDashboardPage() {
                     </div>
                   ))
                 ) : (
-                  <p className="text-xs text-[#7c7c7c]">No posts found</p>
+                  <p className="text-xs text-zinc-500 py-4 text-center">No posts yet</p>
                 )}
               </div>
             </div>
 
-            <div className="card bg-white p-5 rounded-xl border border-[#ccc] shadow-sm">
-              <h3 className="text-sm font-bold text-[#1c1c1c] mb-3 pb-2 border-b border-[#edeff1] flex items-center justify-between">
+            <div className="bg-[#0d0d11] p-5 rounded-2xl border border-white/5 space-y-3">
+              <h3 className="text-xs font-bold text-zinc-300 uppercase tracking-wider pb-2 border-b border-white/5 flex items-center justify-between">
                 <span>Recent Reports</span>
                 <button
                   onClick={() => setActiveTab('reports')}
-                  className="text-xs text-[#0079d3] hover:underline font-normal"
+                  className="text-[11px] text-zinc-300 hover:underline font-normal cursor-pointer"
                 >
                   View all
                 </button>
               </h3>
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 {stats?.recentReports?.length ? (
                   stats.recentReports.map((r) => (
-                    <div key={r._id} className="text-xs space-y-1">
+                    <div key={r._id} className="text-xs space-y-1 py-1">
                       <div className="flex items-center justify-between">
-                        <span className="font-semibold capitalize text-[#1c1c1c]">
-                          {r.targetType} reported
+                        <span className="font-semibold capitalize text-zinc-200">
+                          {r.targetType}
                         </span>
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          r.status === 'pending' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          r.status === 'pending' ? 'bg-red-500/15 text-red-400' : 'bg-white/5 text-zinc-400'
                         }`}>
                           {r.status}
                         </span>
                       </div>
-                      <p className="text-[#7c7c7c] line-clamp-1 italic text-[11px]">&ldquo;{r.reason}&rdquo;</p>
-                      <span className="text-[10px] text-[#7c7c7c] block">
-                        by u/{r.reporter?.username || 'unknown'}
-                      </span>
+                      <p className="text-zinc-400 line-clamp-1 italic text-[11px]">&ldquo;{r.reason}&rdquo;</p>
                     </div>
                   ))
                 ) : (
-                  <p className="text-xs text-[#7c7c7c]">No pending reports. Platform clean!</p>
+                  <div className="text-center py-4 space-y-1 text-zinc-500">
+                    <CheckCircle className="w-6 h-6 mx-auto text-zinc-300" />
+                    <p className="text-xs">No pending reports. Platform clean!</p>
+                  </div>
                 )}
               </div>
             </div>
@@ -632,7 +611,7 @@ export default function AdminDashboardPage() {
 
       {activeTab === 'users' && (
         <div className="space-y-4">
-          <div className="card bg-white p-4 rounded-xl border border-[#ccc] flex flex-col sm:flex-row gap-3 items-center justify-between">
+          <div className="bg-[#0d0d11] p-3.5 rounded-2xl border border-white/5 flex flex-col sm:flex-row gap-3 items-center justify-between">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -640,13 +619,13 @@ export default function AdminDashboardPage() {
               }}
               className="flex-1 w-full relative"
             >
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7c7c7c]" />
+              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
               <input
                 type="text"
                 value={usersSearch}
                 onChange={(e) => setUsersSearch(e.target.value)}
                 placeholder="Search users by username, email, or display name..."
-                className="w-full pl-9 pr-4 py-2 border border-[#ccc] rounded-lg text-sm focus:border-[#0079d3] transition-colors"
+                className="w-full pl-10 pr-4 py-2 bg-[#141419] border border-white/10 rounded-xl text-xs sm:text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-white/30 outline-none transition-colors"
               />
             </form>
 
@@ -654,7 +633,7 @@ export default function AdminDashboardPage() {
               <select
                 value={usersRoleFilter}
                 onChange={(e) => setUsersRoleFilter(e.target.value)}
-                className="px-3 py-2 border border-[#ccc] rounded-lg text-sm bg-white focus:border-[#0079d3]"
+                className="px-3 py-2 border border-white/10 rounded-xl text-xs bg-[#141419] text-zinc-300 focus:border-white/30 outline-none cursor-pointer"
               >
                 <option value="">All Roles</option>
                 <option value="user">Users</option>
@@ -664,64 +643,64 @@ export default function AdminDashboardPage() {
               <button
                 type="button"
                 onClick={() => fetchUsers(1)}
-                className="px-4 py-2 bg-[#0079d3] hover:bg-[#006cbd] text-white rounded-lg text-sm font-semibold transition-colors shrink-0"
+                className="px-4 py-2 bg-white hover:bg-zinc-200 text-black rounded-xl text-xs font-bold transition-colors cursor-pointer shrink-0"
               >
                 Filter
               </button>
             </div>
           </div>
 
-          <div className="card bg-white rounded-xl border border-[#ccc] overflow-hidden shadow-sm">
+          <div className="bg-[#0d0d11] rounded-2xl border border-white/5 overflow-hidden">
             {usersLoading ? (
               <div className="py-16">
                 <LoadingSpinner size="lg" />
               </div>
             ) : usersList.length === 0 ? (
-              <div className="py-12 text-center text-[#7c7c7c] text-sm">
-                No users found matching the query.
+              <div className="py-12 text-center text-zinc-500 text-xs">
+                No users found.
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-[#f8f9fa] border-b border-[#edeff1] text-xs font-semibold text-[#7c7c7c] uppercase">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-white/[0.02] border-b border-white/5 text-[11px] font-bold text-zinc-400 uppercase">
                     <tr>
-                      <th className="px-4 py-3">User</th>
+                      <th className="px-4 py-3">Member</th>
                       <th className="px-4 py-3">Email</th>
                       <th className="px-4 py-3">Role</th>
                       <th className="px-4 py-3">Joined</th>
                       <th className="px-4 py-3 text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#edeff1]">
+                  <tbody className="divide-y divide-white/5">
                     {usersList.map((u) => (
-                      <tr key={u._id} className="hover:bg-[#f8f9fa]/80 transition-colors">
+                      <tr key={u._id} className="hover:bg-white/[0.015] transition-colors">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2.5">
-                            <Avatar src={u.avatar} username={u.username} size={32} />
+                            <Avatar src={u.avatar} username={u.username} size={30} />
                             <div>
                               <Link
                                 href={`/profile/${u.username}`}
-                                className="font-semibold text-[#1c1c1c] hover:underline block"
+                                className="font-semibold text-zinc-200 hover:text-white block"
                               >
                                 {u.displayName || u.username}
                               </Link>
-                              <span className="text-xs text-[#7c7c7c]">u/{u.username}</span>
+                              <span className="text-[11px] text-zinc-500">u/{u.username}</span>
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-xs text-[#7c7c7c]">{u.email}</td>
+                        <td className="px-4 py-3 text-zinc-400">{u.email}</td>
                         <td className="px-4 py-3">
                           <span
-                            className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${
+                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                               u.role === 'admin'
-                                ? 'bg-purple-100 text-purple-700 border border-purple-200'
-                                : 'bg-gray-100 text-gray-700'
+                                ? 'bg-white/10 text-zinc-200 border border-white/20'
+                                : 'bg-white/5 text-zinc-400'
                             }`}
                           >
                             {u.role}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-xs text-[#7c7c7c]">
+                        <td className="px-4 py-3 text-zinc-500">
                           {new Date(u.createdAt).toLocaleDateString()}
                         </td>
                         <td className="px-4 py-3 text-right">
@@ -730,7 +709,7 @@ export default function AdminDashboardPage() {
                               onClick={() => handleRoleToggle(u)}
                               disabled={u._id === user._id}
                               title={u.role === 'admin' ? 'Demote to User' : 'Promote to Admin'}
-                              className="px-2.5 py-1 text-xs font-medium rounded border border-[#ccc] hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+                              className="px-2.5 py-1 text-xs font-semibold rounded-xl border border-white/10 hover:bg-white/5 text-zinc-300 transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1 cursor-pointer"
                             >
                               {u.role === 'admin' ? <UserX size={13} /> : <UserCheck size={13} />}
                               <span>{u.role === 'admin' ? 'Demote' : 'Make Admin'}</span>
@@ -740,9 +719,9 @@ export default function AdminDashboardPage() {
                               onClick={() => handleDeleteUser(u)}
                               disabled={u._id === user._id}
                               title="Delete user and all content"
-                              className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                              className="p-1.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                             >
-                              <Trash2 size={16} />
+                              <Trash2 size={15} />
                             </button>
                           </div>
                         </td>
@@ -754,22 +733,22 @@ export default function AdminDashboardPage() {
             )}
 
             {usersPages > 1 && (
-              <div className="p-4 border-t border-[#edeff1] flex justify-center">
+              <div className="p-4 border-t border-white/5 flex justify-center">
                 <div className="flex gap-2">
                   <button
                     disabled={usersPage <= 1}
                     onClick={() => fetchUsers(usersPage - 1)}
-                    className="px-3 py-1.5 text-xs rounded border hover:bg-gray-50 disabled:opacity-50"
+                    className="px-3 py-1.5 text-xs rounded-xl border border-white/10 hover:bg-white/5 text-zinc-300 disabled:opacity-40"
                   >
                     Previous
                   </button>
-                  <span className="px-3 py-1.5 text-xs text-[#7c7c7c]">
+                  <span className="px-3 py-1.5 text-xs text-zinc-500">
                     Page {usersPage} of {usersPages}
                   </span>
                   <button
                     disabled={usersPage >= usersPages}
                     onClick={() => fetchUsers(usersPage + 1)}
-                    className="px-3 py-1.5 text-xs rounded border hover:bg-gray-50 disabled:opacity-50"
+                    className="px-3 py-1.5 text-xs rounded-xl border border-white/10 hover:bg-white/5 text-zinc-300 disabled:opacity-40"
                   >
                     Next
                   </button>
@@ -782,7 +761,7 @@ export default function AdminDashboardPage() {
 
       {activeTab === 'posts' && (
         <div className="space-y-4">
-          <div className="card bg-white p-4 rounded-xl border border-[#ccc]">
+          <div className="bg-[#0d0d11] p-3.5 rounded-2xl border border-white/5">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -791,39 +770,39 @@ export default function AdminDashboardPage() {
               className="flex gap-2"
             >
               <div className="relative flex-1">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7c7c7c]" />
+                <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
                 <input
                   type="text"
                   value={postsSearch}
                   onChange={(e) => setPostsSearch(e.target.value)}
                   placeholder="Search posts by title..."
-                  className="w-full pl-9 pr-4 py-2 border border-[#ccc] rounded-lg text-sm focus:border-[#0079d3] transition-colors"
+                  className="w-full pl-10 pr-4 py-2 bg-[#141419] border border-white/10 rounded-xl text-xs sm:text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-white/30 outline-none transition-colors"
                 />
               </div>
               <button
                 type="submit"
-                className="px-5 py-2 bg-[#0079d3] hover:bg-[#006cbd] text-white rounded-lg text-sm font-semibold transition-colors"
+                className="px-4 py-2 bg-white hover:bg-zinc-200 text-black rounded-xl text-xs font-bold transition-colors cursor-pointer"
               >
                 Search
               </button>
             </form>
           </div>
 
-          <div className="card bg-white rounded-xl border border-[#ccc] overflow-hidden shadow-sm">
+          <div className="bg-[#0d0d11] rounded-2xl border border-white/5 overflow-hidden">
             {postsLoading ? (
               <div className="py-16">
                 <LoadingSpinner size="lg" />
               </div>
             ) : postsList.length === 0 ? (
-              <div className="py-12 text-center text-[#7c7c7c] text-sm">
+              <div className="py-12 text-center text-zinc-500 text-xs">
                 No posts found.
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-[#f8f9fa] border-b border-[#edeff1] text-xs font-semibold text-[#7c7c7c] uppercase">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-white/[0.02] border-b border-white/5 text-[11px] font-bold text-zinc-400 uppercase">
                     <tr>
-                      <th className="px-4 py-3">Post Title</th>
+                      <th className="px-4 py-3">Title</th>
                       <th className="px-4 py-3">Author</th>
                       <th className="px-4 py-3">Score</th>
                       <th className="px-4 py-3">Comments</th>
@@ -831,45 +810,45 @@ export default function AdminDashboardPage() {
                       <th className="px-4 py-3 text-right">Action</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#edeff1]">
+                  <tbody className="divide-y divide-white/5">
                     {postsList.map((p) => (
-                      <tr key={p._id} className="hover:bg-[#f8f9fa]/80 transition-colors">
+                      <tr key={p._id} className="hover:bg-white/[0.015] transition-colors">
                         <td className="px-4 py-3 max-w-sm">
                           <Link
                             href={`/post/${p._id}`}
-                            className="font-semibold text-[#1c1c1c] hover:text-[#0079d3] line-clamp-1"
+                            className="font-semibold text-zinc-200 hover:text-white line-clamp-1 transition-colors"
                           >
                             {p.title}
                           </Link>
                         </td>
-                        <td className="px-4 py-3 text-xs">
+                        <td className="px-4 py-3 text-zinc-400">
                           <Link
                             href={`/profile/${p.author?.username}`}
-                            className="hover:underline text-[#1c1c1c]"
+                            className="hover:underline text-zinc-300"
                           >
                             u/{p.author?.username || 'unknown'}
                           </Link>
                         </td>
-                        <td className="px-4 py-3 text-xs font-bold text-[#1c1c1c]">{p.score || 0}</td>
-                        <td className="px-4 py-3 text-xs text-[#7c7c7c]">{p.commentCount || 0}</td>
-                        <td className="px-4 py-3 text-xs text-[#7c7c7c]">
+                        <td className="px-4 py-3 font-bold text-zinc-200">{p.score || 0}</td>
+                        <td className="px-4 py-3 text-zinc-400">{p.commentCount || 0}</td>
+                        <td className="px-4 py-3 text-zinc-500">
                           {new Date(p.createdAt).toLocaleDateString()}
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <Link
                               href={`/post/${p._id}`}
-                              className="p-1.5 text-gray-500 hover:text-gray-900 rounded hover:bg-gray-100"
+                              className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-white/5"
                               title="View post"
                             >
-                              <ExternalLink size={16} />
+                              <ExternalLink size={15} />
                             </Link>
                             <button
                               onClick={() => handleDeletePost(p._id, p.title)}
-                              className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
-                              title="Delete post permanently"
+                              className="p-1.5 text-red-400 hover:text-red-300 rounded-lg hover:bg-red-500/10 transition-colors cursor-pointer"
+                              title="Delete post"
                             >
-                              <Trash2 size={16} />
+                              <Trash2 size={15} />
                             </button>
                           </div>
                         </td>
@@ -881,22 +860,22 @@ export default function AdminDashboardPage() {
             )}
 
             {postsPages > 1 && (
-              <div className="p-4 border-t border-[#edeff1] flex justify-center">
+              <div className="p-4 border-t border-white/5 flex justify-center">
                 <div className="flex gap-2">
                   <button
                     disabled={postsPage <= 1}
                     onClick={() => fetchPosts(postsPage - 1)}
-                    className="px-3 py-1.5 text-xs rounded border hover:bg-gray-50 disabled:opacity-50"
+                    className="px-3 py-1.5 text-xs rounded-xl border border-white/10 hover:bg-white/5 text-zinc-300 disabled:opacity-40"
                   >
                     Previous
                   </button>
-                  <span className="px-3 py-1.5 text-xs text-[#7c7c7c]">
+                  <span className="px-3 py-1.5 text-xs text-zinc-500">
                     Page {postsPage} of {postsPages}
                   </span>
                   <button
                     disabled={postsPage >= postsPages}
                     onClick={() => fetchPosts(postsPage + 1)}
-                    className="px-3 py-1.5 text-xs rounded border hover:bg-gray-50 disabled:opacity-50"
+                    className="px-3 py-1.5 text-xs rounded-xl border border-white/10 hover:bg-white/5 text-zinc-300 disabled:opacity-40"
                   >
                     Next
                   </button>
@@ -909,18 +888,18 @@ export default function AdminDashboardPage() {
 
       {activeTab === 'reports' && (
         <div className="space-y-4">
-          <div className="card bg-white p-4 rounded-xl border border-[#ccc] flex items-center justify-between">
+          <div className="bg-[#0d0d11] p-3.5 rounded-2xl border border-white/5 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-[#7c7c7c] uppercase">Filter Status:</span>
+              <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Status:</span>
               <div className="flex gap-1">
                 {['pending', 'resolved', 'dismissed', 'all'].map((st) => (
                   <button
                     key={st}
                     onClick={() => setReportsFilter(st)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-colors ${
+                    className={`px-3 py-1 rounded-xl text-xs font-bold capitalize transition-colors cursor-pointer ${
                       reportsFilter === st
-                        ? 'bg-[#0079d3] text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        ? 'bg-white text-black'
+                        : 'bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10'
                     }`}
                   >
                     {st}
@@ -928,7 +907,7 @@ export default function AdminDashboardPage() {
                 ))}
               </div>
             </div>
-            <span className="text-xs text-[#7c7c7c]">{reportsTotal} reports total</span>
+            <span className="text-xs text-zinc-500">{reportsTotal} reports</span>
           </div>
 
           <div className="space-y-3">
@@ -937,71 +916,71 @@ export default function AdminDashboardPage() {
                 <LoadingSpinner size="lg" />
               </div>
             ) : reportsList.length === 0 ? (
-              <div className="card bg-white p-12 text-center rounded-xl border border-[#ccc]">
-                <CheckCircle className="w-12 h-12 mx-auto mb-3 text-green-500" />
-                <h3 className="font-bold text-gray-900 mb-1">Clean Slate</h3>
-                <p className="text-xs text-gray-500">No moderation reports found in this category.</p>
+              <div className="bg-[#0d0d11] p-12 text-center rounded-2xl border border-white/5 space-y-2">
+                <CheckCircle className="w-10 h-10 mx-auto text-zinc-300" />
+                <h3 className="font-bold text-sm text-zinc-200">No Reports Found</h3>
+                <p className="text-xs text-zinc-500">No moderation items in this filter category.</p>
               </div>
             ) : (
               reportsList.map((rep) => (
-                <div key={rep._id} className="card bg-white p-5 rounded-xl border border-[#ccc] shadow-sm space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[#edeff1]">
+                <div key={rep._id} className="bg-[#0d0d11] p-5 rounded-2xl border border-white/5 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-white/5">
                     <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded text-[11px] font-bold uppercase bg-blue-100 text-[#0079d3]">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-blue-500/15 text-blue-400 border border-blue-500/20">
                         {rep.targetType}
                       </span>
-                      <span className={`px-2 py-0.5 rounded text-[11px] font-bold uppercase ${
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
                         rep.status === 'pending'
-                          ? 'bg-red-100 text-red-700'
+                          ? 'bg-red-500/15 text-red-400'
                           : rep.status === 'resolved'
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-gray-100 text-gray-700'
+                          ? 'bg-white/10 text-zinc-300'
+                          : 'bg-white/5 text-zinc-400'
                       }`}>
                         {rep.status}
                       </span>
-                      <span className="text-xs text-[#7c7c7c]">
-                        Reported {new Date(rep.createdAt).toLocaleString()}
+                      <span className="text-xs text-zinc-500">
+                        {new Date(rep.createdAt).toLocaleString()}
                       </span>
                     </div>
 
-                    <div className="text-xs text-[#7c7c7c]">
-                      Reporter: <strong className="text-gray-900">u/{rep.reporter?.username || 'unknown'}</strong>
+                    <div className="text-xs text-zinc-400">
+                      Reporter: <strong className="text-zinc-200">u/{rep.reporter?.username || 'unknown'}</strong>
                     </div>
                   </div>
 
                   <div>
-                    <div className="text-xs font-semibold text-[#7c7c7c] uppercase mb-1">Reason:</div>
-                    <div className="p-3 bg-red-50 text-red-800 rounded-lg text-sm leading-relaxed border border-red-100">
+                    <div className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-1">Reason:</div>
+                    <div className="p-3 bg-red-500/10 text-red-300 rounded-xl text-xs leading-relaxed border border-red-500/20">
                       {rep.reason}
                     </div>
                   </div>
 
                   {rep.target && (
-                    <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 text-xs space-y-1">
-                      <div className="font-semibold text-gray-700">
+                    <div className="p-3 bg-black/40 rounded-xl border border-white/5 text-xs space-y-1">
+                      <div className="font-semibold text-zinc-400">
                         Reported Content Preview ({rep.targetType}):
                       </div>
                       {rep.targetType === 'post' ? (
                         <div>
-                          <div className="font-bold text-gray-900 text-sm">{rep.target.title}</div>
-                          <div className="text-gray-600 line-clamp-2 mt-1">{rep.target.content}</div>
+                          <div className="font-bold text-zinc-100">{rep.target.title}</div>
+                          <div className="text-zinc-400 line-clamp-2 mt-1">{rep.target.content}</div>
                           <Link
                             href={`/post/${rep.targetId}`}
-                            className="text-[#0079d3] hover:underline mt-2 inline-flex items-center gap-1"
+                            className="text-zinc-300 hover:text-white hover:underline mt-2 inline-flex items-center gap-1"
                           >
-                            <span>Open Post</span>
+                            <span>View Full Post</span>
                             <ExternalLink size={12} />
                           </Link>
                         </div>
                       ) : (
                         <div>
-                          <div className="text-gray-700 italic">
+                          <div className="text-zinc-300 italic">
                             {rep.target.deletedAt ? '[Comment already deleted]' : rep.target.content}
                           </div>
                           {rep.target.post && (
                             <Link
                               href={`/post/${rep.target.post}`}
-                              className="text-[#0079d3] hover:underline mt-2 inline-flex items-center gap-1"
+                              className="text-zinc-300 hover:text-white hover:underline mt-2 inline-flex items-center gap-1"
                             >
                               <span>View Discussion Thread</span>
                               <ExternalLink size={12} />
@@ -1017,22 +996,22 @@ export default function AdminDashboardPage() {
                       <>
                         <button
                           onClick={() => handleUpdateReport(rep._id, 'dismissed')}
-                          className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-700 transition-colors"
+                          className="px-3.5 py-1.5 text-xs font-semibold rounded-xl border border-white/10 hover:bg-white/5 text-zinc-300 transition-colors cursor-pointer"
                         >
                           Dismiss Report
                         </button>
                         <button
                           onClick={() => handleUpdateReport(rep._id, 'resolved')}
-                          className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-green-600 hover:bg-green-700 text-white transition-colors"
+                          className="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-white hover:bg-zinc-200 text-black transition-colors cursor-pointer"
                         >
                           Mark Resolved
                         </button>
                         <button
                           onClick={() => handleDeleteReportTarget(rep._id)}
-                          className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors flex items-center gap-1.5"
+                          className="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-red-500 hover:bg-red-600 text-white transition-colors flex items-center gap-1.5 cursor-pointer"
                         >
                           <Trash2 size={13} />
-                          <span>Delete Content &amp; Resolve</span>
+                          <span>Delete Content</span>
                         </button>
                       </>
                     )}
@@ -1040,7 +1019,7 @@ export default function AdminDashboardPage() {
                     {rep.status !== 'pending' && (
                       <button
                         onClick={() => handleUpdateReport(rep._id, 'pending')}
-                        className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-700 transition-colors"
+                        className="px-3.5 py-1.5 text-xs font-semibold rounded-xl border border-white/10 hover:bg-white/5 text-zinc-300 transition-colors cursor-pointer"
                       >
                         Reopen Report
                       </button>
@@ -1048,30 +1027,6 @@ export default function AdminDashboardPage() {
                   </div>
                 </div>
               ))
-            )}
-
-            {reportsPages > 1 && (
-              <div className="p-4 flex justify-center">
-                <div className="flex gap-2">
-                  <button
-                    disabled={reportsPage <= 1}
-                    onClick={() => fetchReports(reportsPage - 1)}
-                    className="px-3 py-1.5 text-xs rounded border hover:bg-gray-50 disabled:opacity-50"
-                  >
-                    Previous
-                  </button>
-                  <span className="px-3 py-1.5 text-xs text-[#7c7c7c]">
-                    Page {reportsPage} of {reportsPages}
-                  </span>
-                  <button
-                    disabled={reportsPage >= reportsPages}
-                    onClick={() => fetchReports(reportsPage + 1)}
-                    className="px-3 py-1.5 text-xs rounded border hover:bg-gray-50 disabled:opacity-50"
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
             )}
           </div>
         </div>

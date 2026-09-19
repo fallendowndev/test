@@ -15,12 +15,25 @@ const postSchema = new mongoose.Schema({
   },
   content: {
     type: String,
-    required: [true, 'Post content is required'],
+    default: '',
     maxlength: [40000, 'Content cannot exceed 40000 characters'],
   },
   image: {
     type: String,
     default: null,
+  },
+  video: {
+    type: String,
+    default: null,
+  },
+  link: {
+    type: String,
+    default: null,
+  },
+  postType: {
+    type: String,
+    enum: ['text', 'media', 'link'],
+    default: 'text',
   },
   score: {
     type: Number,

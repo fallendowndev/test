@@ -2,128 +2,179 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
 import Avatar from './Avatar';
 import SearchBar from './SearchBar';
-import { Plus, ChevronDown, User, Settings, FileText, LogOut, LayoutDashboard } from 'lucide-react';
+import { PlusCircle, ChevronDown, User, Settings, FileText, LogOut, LayoutDashboard } from 'lucide-react';
 
 export default function Navbar() {
   const { user, loading, logout } = useAuth();
+  const { toast } = useNotification();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [menuOpen]);
 
   const handleLogout = async () => {
     await logout();
     setMenuOpen(false);
+    toast.success('Logged out successfully');
     router.push('/');
   };
 
   return (
-    <nav className="bg-white border-b border-[var(--color-border)] sticky top-0 z-50">
-      <div className="max-w-[1200px] mx-auto px-4 h-12 flex items-center gap-4">
-        <Link href="/" className="flex items-center gap-2 shrink-0 no-underline">
-          <div className="w-8 h-8 bg-[var(--color-primary)] rounded-full flex items-center justify-center">
-            <span className="text-white font-bold text-sm">JB</span>
-          </div>
-          <span className="text-lg font-bold text-[var(--foreground)] hidden sm:block">
-            Just Blog!
+    <nav className="bg-black/80 backdrop-blur-xl border-b border-white/5 sticky top-0 z-40 transition-colors">
+      <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
+        <Link href="/" className="flex items-center shrink-0 no-underline group select-none">
+          <span className="text-3xl font-bold text-white tracking-tight select-none">
+            orvix
           </span>
         </Link>
 
-        <div className="flex-1 max-w-xl">
+        <div className="flex-1 max-w-md mx-auto px-2">
           <SearchBar />
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
           {loading ? (
-            <div className="w-20 h-8 bg-gray-100 rounded animate-pulse" />
+            <div className="w-20 h-9 bg-white/5 rounded-full animate-pulse" />
           ) : user ? (
             <>
               <Link
                 href="/create"
-                className="hidden sm:flex items-center gap-1 px-3 py-1.5 border border-[var(--color-border)] rounded-full text-sm font-medium text-[var(--color-muted)] hover:bg-[var(--color-surface-hover)] no-underline transition-colors"
+                className="hidden sm:flex gap-1.5 items-center py-2 px-2.5 text-sm font-semibold text-white no-underline select-none hover:bg-white/10 rounded-full transition-colors"
               >
-                <Plus size={16} />
-                Create
+                <PlusCircle size={18} className="text-white" />
+                <span className="text-sm">Create</span>
               </Link>
 
-              <div className="relative">
+              <div className="relative" ref={menuRef}>
                 <button
                   onClick={() => setMenuOpen(!menuOpen)}
-                  className="flex items-center gap-2 px-2 py-1 rounded hover:bg-[var(--color-surface-hover)] transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 px-1.5 py-1.5 rounded-full hover:bg-white/[0.06] transition-colors cursor-pointer select-none"
                 >
-                  <Avatar src={user.avatar} username={user.username} size={28} />
-                  <span className="text-sm font-medium hidden sm:block">{user.displayName}</span>
-                  <ChevronDown size={12} />
+                  <Avatar src={user.avatar} username={user.username} size={32} />
+                  <ChevronDown size={15} className={`text-zinc-400 transition-transform ${menuOpen ? 'rotate-180' : ''}`} />
                 </button>
 
-                {menuOpen && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-                    <div className="absolute right-0 top-full mt-1 w-52 bg-white border border-[var(--color-border)] rounded shadow-lg z-50">
-                      <Link
-                        href={`/profile/${user.username}`}
-                        className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-[var(--color-surface-hover)] no-underline text-[var(--foreground)]"
-                        onClick={() => setMenuOpen(false)}
+                <AnimatePresence>
+                  {menuOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
+                      <motion.div
+                        initial={{ opacity: 0, y: -6, scale: 0.96 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -6, scale: 0.96 }}
+                        transition={{ duration: 0.15, ease: 'easeOut' }}
+                        className="absolute left-1/2 -translate-x-1/2 top-full mt-3 w-52 bg-[#0c0c0f] border border-white/10 rounded-2xl shadow-2xl shadow-black z-50 p-1.5 space-y-0.5"
                       >
-                        <User size={14} />
-                        My Profile
-                      </Link>
-                      <Link
-                        href="/settings"
-                        className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-[var(--color-surface-hover)] no-underline text-[var(--foreground)]"
-                        onClick={() => setMenuOpen(false)}
-                      >
-                        <Settings size={14} />
-                        Settings
-                      </Link>
-                      <Link
-                        href="/create"
-                        className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-[var(--color-surface-hover)] no-underline text-[var(--foreground)] sm:hidden"
-                        onClick={() => setMenuOpen(false)}
-                      >
-                        <FileText size={14} />
-                        Create Post
-                      </Link>
-                      {user.role === 'admin' && (
+                        <div
+                          className="absolute -top-[10px] left-1/2 -translate-x-1/2 w-0 h-0"
+                          style={{
+                            borderLeft: '10px solid transparent',
+                            borderRight: '10px solid transparent',
+                            borderBottom: '10px solid rgba(255,255,255,0.10)',
+                          }}
+                        />
+                        <div
+                          className="absolute -top-[8px] left-1/2 -translate-x-1/2 w-0 h-0"
+                          style={{
+                            borderLeft: '8px solid transparent',
+                            borderRight: '8px solid transparent',
+                            borderBottom: '8px solid #0c0c0f',
+                          }}
+                        />
+                        <div className="px-3 py-2.5 border-b border-white/5 mb-1 flex items-center gap-3">
+                          <Avatar src={user.avatar} username={user.username} size={34} />
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold text-zinc-100 truncate">{user.displayName}</p>
+                            <p className="text-[11px] text-zinc-500 truncate">u/{user.username}</p>
+                          </div>
+                        </div>
+
                         <Link
-                          href="/admin"
-                          className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-[var(--color-surface-hover)] no-underline text-[var(--color-primary)] font-semibold"
+                          href={`/profile/${user.username}`}
+                          className="flex items-center gap-2 px-3 py-2.5 text-xs font-medium rounded-xl hover:bg-white/5 text-zinc-300 hover:text-white transition-colors select-none"
                           onClick={() => setMenuOpen(false)}
                         >
-                          <LayoutDashboard size={14} />
-                          Admin Dashboard
+                          <User size={14} className="text-zinc-400" />
+                          <span>My Profile</span>
                         </Link>
-                      )}
-                      <hr className="border-[var(--color-border)]" />
-                      <button
-                        onClick={handleLogout}
-                        className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm hover:bg-[var(--color-surface-hover)] text-[var(--color-danger)] cursor-pointer"
-                      >
-                        <LogOut size={14} />
-                        Log Out
-                      </button>
-                    </div>
-                  </>
-                )}
+                        <Link
+                          href="/settings"
+                          className="flex items-center gap-2 px-3 py-2.5 text-xs font-medium rounded-xl hover:bg-white/5 text-zinc-300 hover:text-white transition-colors select-none"
+                          onClick={() => setMenuOpen(false)}
+                        >
+                          <Settings size={14} className="text-zinc-400" />
+                          <span>Settings</span>
+                        </Link>
+                        <Link
+                          href="/create"
+                          className="flex items-center gap-2 px-3 py-2.5 text-xs font-medium rounded-xl hover:bg-white/5 text-zinc-300 hover:text-white transition-colors sm:hidden select-none"
+                          onClick={() => setMenuOpen(false)}
+                        >
+                          <FileText size={14} className="text-zinc-400" />
+                          <span>Create Post</span>
+                        </Link>
+
+                        {user.role === 'admin' && (
+                          <Link
+                            href="/admin"
+                            className="flex items-center gap-2 px-3 py-2.5 text-xs font-semibold rounded-xl bg-white/5 text-zinc-200 hover:bg-white/10 hover:text-white transition-colors select-none"
+                            onClick={() => setMenuOpen(false)}
+                          >
+                            <LayoutDashboard size={14} />
+                            <span>Admin Dashboard</span>
+                          </Link>
+                        )}
+
+                        <div className="border-t border-white/5 pt-1 mt-1">
+                          <button
+                            onClick={handleLogout}
+                            className="flex items-center gap-2 w-full text-left px-3 py-2.5 text-xs font-medium rounded-xl hover:bg-red-500/10 text-red-400 hover:text-red-300 transition-colors cursor-pointer select-none"
+                          >
+                            <LogOut size={14} />
+                            <span>Log Out</span>
+                          </button>
+                        </div>
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
               </div>
             </>
           ) : (
-            <>
+            <div className="flex items-center gap-2">
               <Link
                 href="/login"
-                className="px-4 py-1.5 text-sm font-bold text-[var(--color-primary)] border border-[var(--color-primary)] rounded-full hover:bg-blue-50 no-underline transition-colors"
+                className="px-4 py-2 text-xs font-semibold text-zinc-300 hover:text-white transition-colors select-none"
               >
                 Log In
               </Link>
               <Link
                 href="/register"
-                className="px-4 py-1.5 text-sm font-bold text-white bg-[var(--color-primary)] rounded-full hover:bg-[var(--color-primary-hover)] no-underline transition-colors"
+                className="px-4.5 py-2 text-xs font-bold text-black bg-white hover:bg-zinc-200 rounded-full transition-all shadow-sm hover:scale-105 select-none"
               >
                 Sign Up
               </Link>
-            </>
+            </div>
           )}
         </div>
       </div>

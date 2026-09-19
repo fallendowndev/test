@@ -3,45 +3,43 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
 import { api } from '../lib/api';
+import { ImageIcon } from 'lucide-react';
 
 export default function CommentForm({
   postId,
   parentCommentId = null,
   onCommentAdded,
   onCancel = null,
-  placeholder = 'What are your thoughts?',
+  placeholder = 'Join the conversation',
 }) {
   const { user } = useAuth();
+  const { toast } = useNotification();
   const router = useRouter();
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
 
   const isReply = Boolean(parentCommentId);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!user) {
+      toast.info('Please log in to leave a comment');
       router.push('/login');
       return;
     }
 
     if (!content.trim()) {
-      setError('Comment cannot be empty');
+      toast.warning('Comment cannot be empty');
       return;
     }
 
     try {
       setLoading(true);
-      setError('');
-
-      let endpoint;
-      if (isReply) {
-        endpoint = `/comments/${parentCommentId}/replies`;
-      } else {
-        endpoint = `/posts/${postId}/comments`;
-      }
+      let endpoint = isReply
+        ? `/comments/${parentCommentId}/replies`
+        : `/posts/${postId}/comments`;
 
       const res = await api(endpoint, {
         method: 'POST',
@@ -50,12 +48,13 @@ export default function CommentForm({
 
       if (res.success && res.data?.comment) {
         setContent('');
+        toast.success(isReply ? 'Reply posted' : 'Comment posted');
         if (onCommentAdded) {
           onCommentAdded(res.data.comment);
         }
       }
     } catch (err) {
-      setError(err.message || 'Failed to submit comment');
+      toast.error(err.message || 'Failed to submit comment');
     } finally {
       setLoading(false);
     }
@@ -63,38 +62,48 @@ export default function CommentForm({
 
   return (
     <form onSubmit={handleSubmit} className="w-full">
-      {error && (
-        <div className="text-xs text-[#ea0027] bg-[#fee2e2] px-3 py-1.5 rounded mb-2">
-          {error}
-        </div>
-      )}
-
-      <div className="border border-[#ccc] rounded-md focus-within:border-[#0079d3] bg-white transition-colors overflow-hidden">
+      <div className="border border-white/10 rounded-2xl focus-within:border-white/25 bg-[#09090d] transition-all overflow-hidden shadow-sm">
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder={user ? placeholder : 'Log in or sign up to leave a comment'}
+          placeholder={user ? placeholder : 'Sign in to join the conversation...'}
           rows={isReply ? 2 : 3}
           maxLength={10000}
+          dir="auto"
           disabled={!user && !loading}
           onClick={() => {
             if (!user) router.push('/login');
           }}
-          className="w-full p-2.5 text-sm resize-y focus:outline-none placeholder-[#7c7c7c] disabled:bg-[#f8f9fa] disabled:cursor-pointer"
+          className="w-full p-3.5 text-xs sm:text-sm bg-transparent resize-y focus:outline-none placeholder:text-zinc-500 text-zinc-100 disabled:cursor-pointer leading-relaxed"
         />
 
-        <div className="flex items-center justify-between px-3 py-2 bg-[#f8f9fa] border-t border-[#edeff1]">
-          <span className="text-[11px] text-[#7c7c7c]">
-            {user ? `Comment as u/${user.username}` : 'Sign in to join the conversation'}
-          </span>
+        <div className="flex items-center justify-between px-3 py-2 bg-white/[0.015] border-t border-white/5">
+          {/* Left tools like Reddit: Image, GIF, Aa */}
+          <div className="flex items-center gap-2 text-zinc-400">
+            <button
+              type="button"
+              onClick={() => toast.info('Direct image comments coming soon')}
+              className="p-1 rounded hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+              title="Add Image"
+            >
+              <ImageIcon size={17} />
+            </button>
+            <span className="text-xs font-semibold px-1 text-zinc-400 select-none">
+              Aa
+            </span>
+          </div>
 
+          {/* Right Action Buttons */}
           <div className="flex items-center gap-2">
-            {onCancel && (
+            {(onCancel || content.trim()) && (
               <button
                 type="button"
-                onClick={onCancel}
+                onClick={() => {
+                  if (onCancel) onCancel();
+                  else setContent('');
+                }}
                 disabled={loading}
-                className="px-3 py-1 text-xs font-semibold rounded text-[#7c7c7c] hover:bg-[#edeff1] transition-colors"
+                className="px-3.5 py-1.5 text-xs font-semibold rounded-full text-zinc-400 hover:text-zinc-200 hover:bg-white/5 transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -103,9 +112,13 @@ export default function CommentForm({
             <button
               type="submit"
               disabled={loading || !content.trim() || !user}
-              className="px-4 py-1 text-xs font-semibold rounded-full bg-[#0079d3] hover:bg-[#006cbd] text-white transition-colors disabled:opacity-50"
+              className={`px-4.5 py-1.5 text-xs font-bold rounded-full transition-all cursor-pointer shadow-sm select-none ${
+                content.trim() && user
+                  ? 'bg-blue-600 hover:bg-blue-500 text-white'
+                  : 'bg-white/10 text-zinc-500 cursor-not-allowed'
+              }`}
             >
-              {loading ? 'Submitting...' : isReply ? 'Reply' : 'Comment'}
+              <span>{loading ? 'Posting...' : isReply ? 'Reply' : 'Comment'}</span>
             </button>
           </div>
         </div>

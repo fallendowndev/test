@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
 import { api } from '../lib/api';
 import { ArrowUp, ArrowDown } from 'lucide-react';
 
@@ -13,6 +15,7 @@ export default function VoteControls({
   horizontal = false,
 }) {
   const { user } = useAuth();
+  const { toast } = useNotification();
   const router = useRouter();
   const [score, setScore] = useState(initialScore);
   const [userVote, setUserVote] = useState(initialVote);
@@ -20,6 +23,7 @@ export default function VoteControls({
 
   const handleVote = async (value) => {
     if (!user) {
+      toast.info('Please log in to vote on posts');
       router.push('/login');
       return;
     }
@@ -61,7 +65,7 @@ export default function VoteControls({
     } catch (err) {
       setUserVote(prevVote);
       setScore(prevScore);
-      console.error('Vote failed:', err);
+      toast.error(err.message || 'Vote failed');
     } finally {
       setIsVoting(false);
     }
@@ -73,52 +77,58 @@ export default function VoteControls({
   return (
     <div
       className={`flex items-center ${
-        horizontal ? 'flex-row gap-2' : 'flex-col gap-0.5'
-      } bg-[#f8f9fa] rounded p-1`}
+        horizontal ? 'flex-row gap-1.5' : 'flex-col gap-0.5'
+      } bg-white/[0.03] border border-white/5 rounded-xl p-1`}
     >
-      <button
+      <motion.button
         type="button"
+        whileTap={{ scale: 1.25 }}
         onClick={() => handleVote(1)}
         disabled={isVoting}
         aria-label="Upvote"
-        className={`p-1 rounded hover:bg-[#edeff1] transition-colors ${
-          isUpvoted ? 'text-[#ff4500]' : 'text-[#7c7c7c] hover:text-[#ff4500]'
+        className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+          isUpvoted
+            ? 'text-[#ff542e] bg-[#ff542e]/10'
+            : 'text-zinc-500 hover:text-[#ff542e] hover:bg-white/5'
         }`}
       >
         <ArrowUp
-          className={`w-5 h-5 transition-transform active:scale-125 ${isUpvoted ? 'fill-current' : ''}`}
-          strokeWidth={isUpvoted ? 0 : 2}
-          fill={isUpvoted ? 'currentColor' : 'none'}
+          size={16}
+          strokeWidth={isUpvoted ? 2.5 : 2}
+          className={isUpvoted ? 'drop-shadow-[0_0_8px_rgba(255,84,46,0.5)]' : ''}
         />
-      </button>
+      </motion.button>
 
       <span
-        className={`text-xs font-bold px-1 select-none min-w-[20px] text-center ${
+        className={`text-xs font-bold px-1 select-none min-w-[20px] text-center transition-colors ${
           isUpvoted
-            ? 'text-[#ff4500]'
+            ? 'text-[#ff542e]'
             : isDownvoted
-            ? 'text-[#7193ff]'
-            : 'text-[#1c1c1c]'
+            ? 'text-[#818cf8]'
+            : 'text-zinc-300'
         }`}
       >
         {score}
       </span>
 
-      <button
+      <motion.button
         type="button"
+        whileTap={{ scale: 1.25 }}
         onClick={() => handleVote(-1)}
         disabled={isVoting}
         aria-label="Downvote"
-        className={`p-1 rounded hover:bg-[#edeff1] transition-colors ${
-          isDownvoted ? 'text-[#7193ff]' : 'text-[#7c7c7c] hover:text-[#7193ff]'
+        className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+          isDownvoted
+            ? 'text-[#818cf8] bg-[#818cf8]/10'
+            : 'text-zinc-500 hover:text-[#818cf8] hover:bg-white/5'
         }`}
       >
         <ArrowDown
-          className={`w-5 h-5 transition-transform active:scale-125 ${isDownvoted ? 'fill-current' : ''}`}
-          strokeWidth={isDownvoted ? 0 : 2}
-          fill={isDownvoted ? 'currentColor' : 'none'}
+          size={16}
+          strokeWidth={isDownvoted ? 2.5 : 2}
+          className={isDownvoted ? 'drop-shadow-[0_0_8px_rgba(129,140,248,0.5)]' : ''}
         />
-      </button>
+      </motion.button>
     </div>
   );
 }

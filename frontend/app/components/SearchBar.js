@@ -18,17 +18,17 @@ export default function SearchBar() {
 
   return (
     <form onSubmit={handleSubmit} className="w-full">
-      <div className="relative">
+      <div className="relative group">
         <Search
-          size={16}
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-muted)]"
+          size={15}
+          className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-zinc-300 transition-colors"
         />
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search Just Blog!"
-          className="w-full pl-10 pr-4 py-1.5 bg-[#f6f7f8] border border-[var(--color-border)] rounded-full text-sm focus:bg-white focus:border-[var(--color-primary)] transition-colors"
+          placeholder="Search discussions, topics, insights..."
+          className="w-full pl-10 pr-4 py-3 bg-[#0d0d11] hover:bg-[#121217] border border-white/10 group-focus-within:border-white/20 group-focus-within:bg-[#121217] rounded-full text-xs text-zinc-100 placeholder:text-zinc-500 transition-all outline-none"
         />
       </div>
     </form>

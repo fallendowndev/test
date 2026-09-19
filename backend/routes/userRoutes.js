@@ -9,5 +9,6 @@ router.get('/:username/posts', userController.getUserPosts);
 
 router.patch('/me/profile', protect, userController.updateProfile);
 router.patch('/me/avatar', protect, upload.single('avatar'), userController.updateAvatar);
+router.patch('/me/banner', protect, upload.single('banner'), userController.updateBanner);
 
 module.exports = router;

@@ -8,7 +8,8 @@ export default function Avatar({ src, username, size = 32 }) {
         alt={username || 'User avatar'}
         width={size}
         height={size}
-        className="rounded-full object-cover"
+        draggable={false}
+        className="rounded-full object-cover select-none pointer-events-none"
         style={{ width: size, height: size, minWidth: size }}
       />
     );
@@ -25,7 +26,7 @@ export default function Avatar({ src, username, size = 32 }) {
 
   return (
     <div
-      className="rounded-full flex items-center justify-center text-white font-bold shrink-0"
+      className="rounded-full flex items-center justify-center text-white font-bold shrink-0 select-none pointer-events-none"
       style={{
         width: size,
         height: size,
@@ -34,7 +35,7 @@ export default function Avatar({ src, username, size = 32 }) {
         fontSize: size * 0.4,
       }}
     >
-      {initial}
+      <span className="select-none pointer-events-none leading-none">{initial}</span>
     </div>
   );
 }

@@ -61,25 +61,25 @@ function SearchContent() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-2 md:px-4 py-6 space-y-6">
-      <div className="card bg-white p-4 rounded border border-[#ccc]">
+    <div className="max-w-4xl mx-auto py-2 space-y-6">
+      <div className="bg-[#0d0d11] p-3.5 rounded-2xl border border-white/5">
         <form onSubmit={handleSearchSubmit} className="flex gap-2">
           <div className="relative flex-1">
             <Search
-              size={18}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7c7c7c]"
+              size={16}
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500"
             />
             <input
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Search posts..."
-              className="w-full pl-10 pr-4 py-2 border border-[#ccc] rounded text-sm focus:border-[#0079d3] transition-colors"
+              placeholder="Search posts and discussions..."
+              className="w-full pl-10 pr-4 py-2 bg-[#141419] border border-white/10 rounded-xl text-xs sm:text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-white/30 outline-none transition-colors"
             />
           </div>
           <button
             type="submit"
-            className="px-5 py-2 rounded bg-[#0079d3] hover:bg-[#006cbd] text-white text-sm font-semibold transition-colors"
+            className="px-5 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-bold transition-all shadow-sm cursor-pointer"
           >
             Search
           </button>
@@ -87,30 +87,30 @@ function SearchContent() {
       </div>
 
       {query && (
-        <div className="flex items-center justify-between text-xs text-[#7c7c7c]">
+        <div className="flex items-center justify-between text-xs text-zinc-400 px-1">
           <span>
-            Search results for <strong className="text-[#1c1c1c] font-semibold">&ldquo;{query}&rdquo;</strong>
+            Results for <strong className="text-zinc-100 font-semibold">&ldquo;{query}&rdquo;</strong>
           </span>
-          <span>{total} {total === 1 ? 'post' : 'posts'} found</span>
+          <span>{total} {total === 1 ? 'post' : 'posts'}</span>
         </div>
       )}
 
       {loading ? (
-        <div className="py-16">
+        <div className="py-20">
           <LoadingSpinner size="lg" />
         </div>
       ) : error ? (
-        <div className="card bg-white p-6 rounded border border-red-200 text-center text-red-600">
+        <div className="bg-[#0d0d11] p-6 rounded-2xl border border-red-500/20 text-center text-red-400 text-xs">
           <p className="font-semibold">{error}</p>
         </div>
       ) : !query.trim() ? (
-        <div className="card bg-white p-12 text-center rounded border border-[#ccc]">
-          <p className="text-sm text-[#7c7c7c]">Enter a search term above to find posts and discussions.</p>
+        <div className="bg-[#0d0d11] p-12 text-center rounded-2xl border border-white/5">
+          <p className="text-xs text-zinc-400">Type a keyword above to find community posts and discussions.</p>
         </div>
       ) : posts.length === 0 ? (
-        <div className="card bg-white p-12 text-center rounded border border-[#ccc]">
-          <h3 className="text-base font-bold text-[#1c1c1c] mb-1">No results found</h3>
-          <p className="text-xs text-[#7c7c7c]">Try searching with different keywords or check your spelling.</p>
+        <div className="bg-[#0d0d11] p-12 text-center rounded-2xl border border-white/5 space-y-2">
+          <h3 className="text-sm font-bold text-zinc-200">No matching posts found</h3>
+          <p className="text-xs text-zinc-500">Try searching with broader terms or check spelling.</p>
         </div>
       ) : (
         <div className="space-y-3">

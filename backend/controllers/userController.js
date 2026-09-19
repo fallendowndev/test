@@ -48,7 +48,7 @@ const getUserPosts = async (req, res, next) => {
 
 const updateProfile = async (req, res, next) => {
   try {
-    const allowedFields = ['displayName', 'bio'];
+    const allowedFields = ['displayName', 'bio', 'banner'];
     const updates = {};
 
     allowedFields.forEach((field) => {
@@ -110,4 +110,35 @@ const updateAvatar = async (req, res, next) => {
   }
 };
 
-module.exports = { getProfile, getUserPosts, updateProfile, updateAvatar };
+const updateBanner = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No image file provided.',
+      });
+    }
+
+    const bannerPath = uploadService.getFilePath(req.file);
+
+    const currentUser = await User.findById(req.user._id);
+    if (currentUser.banner) {
+      await uploadService.deleteFile(currentUser.banner);
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { banner: bannerPath },
+      { returnDocument: 'after' }
+    ).select('-password');
+
+    res.status(200).json({
+      success: true,
+      data: { user },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { getProfile, getUserPosts, updateProfile, updateAvatar, updateBanner };

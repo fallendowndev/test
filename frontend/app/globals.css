@@ -1,72 +1,80 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-primary: #0079d3;
-  --color-primary-hover: #006cbd;
-  --color-upvote: #ff4500;
-  --color-downvote: #7193ff;
-  --color-border: #edeff1;
-  --color-border-hover: #898989;
-  --color-surface: #ffffff;
-  --color-surface-hover: #f8f9fa;
-  --color-muted: #7c7c7c;
-  --color-danger: #ea0027;
-  --color-danger-hover: #cc0022;
-  --color-success: #46d160;
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --color-background: #000000;
+  --color-foreground: #f4f4f5;
+  --color-primary: #ffffff;
+  --color-primary-hover: #e4e4e7;
+  --color-upvote: #ff542e;
+  --color-downvote: #6366f1;
+  --color-border: rgba(255, 255, 255, 0.07);
+  --color-border-hover: rgba(255, 255, 255, 0.16);
+  --color-surface: #0d0d11;
+  --color-surface-hover: #141419;
+  --color-surface-elevated: #1a1a22;
+  --color-muted: #8a8a93;
+  --color-danger: #ef4444;
+  --color-danger-hover: #dc2626;
+  --color-success: #ffffff;
+  --font-sans: var(--font-inter), 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-arabic: 'Cairo', var(--font-cairo), sans-serif;
 }
 
 :root {
-  --background: #dae0e6;
-  --foreground: #1c1c1c;
+  --background: #000000;
+  --foreground: #f4f4f5;
 }
 
 * {
   box-sizing: border-box;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans);
+html, body {
+  background-color: #000000;
+  color: #f4f4f5;
+}
+
+html, body, button, input, textarea, select {
+  font-family: var(--font-inter), 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Utility classes for common patterns */
+/* Arabic typography support */
+:lang(ar), [dir="rtl"], .font-arabic {
+  font-family: 'Cairo', var(--font-cairo), var(--font-inter), sans-serif;
+}
+
 .card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
+  background-color: #0d0d11;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 1rem;
 }
 
 .card:hover {
-  border-color: var(--color-border-hover);
+  border-color: rgba(255, 255, 255, 0.14);
 }
 
-/* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: #000000;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #a1a1a1;
+  background: rgba(255, 255, 255, 0.28);
 }
 
-/* Override focus styles */
 input:focus, textarea:focus, select:focus {
   outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(0, 121, 211, 0.15);
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15);
 }

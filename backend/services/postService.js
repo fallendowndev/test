@@ -3,15 +3,23 @@ const Vote = require('../models/Vote');
 const Comment = require('../models/Comment');
 const { AppError } = require('../middlewares/errorMiddleware');
 
-const create = async (userId, { title, content }, imagePath) => {
+const create = async (userId, { title, content = '', link = null, postType = 'text' }, media = {}) => {
   const postData = {
     author: userId,
     title,
-    content,
+    content: content || '',
+    postType,
   };
 
-  if (imagePath) {
-    postData.image = imagePath;
+  if (typeof media === 'string') {
+    postData.image = media;
+  } else if (media) {
+    if (media.imagePath) postData.image = media.imagePath;
+    if (media.videoPath) postData.video = media.videoPath;
+  }
+
+  if (link) {
+    postData.link = link;
   }
 
   const post = await Post.create(postData);

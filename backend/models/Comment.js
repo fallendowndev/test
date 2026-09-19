@@ -23,6 +23,15 @@ const commentSchema = new mongoose.Schema({
     required: [true, 'Comment content is required'],
     maxlength: [10000, 'Comment cannot exceed 10000 characters'],
   },
+  likes: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+  }],
+  isPinned: {
+    type: Boolean,
+    default: false,
+    index: true,
+  },
   deletedAt: {
     type: Date,
     default: null,

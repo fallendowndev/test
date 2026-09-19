@@ -3,8 +3,20 @@ const uploadService = require('../services/uploadService');
 
 const createPost = async (req, res, next) => {
   try {
-    const imagePath = req.file ? uploadService.getFilePath(req.file) : null;
-    const post = await postService.create(req.user._id, req.body, imagePath);
+    const file = req.file || (req.files && req.files[0]) || null;
+    let imagePath = null;
+    let videoPath = null;
+
+    if (file) {
+      const filePath = uploadService.getFilePath(file);
+      if (file.mimetype && file.mimetype.startsWith('video/')) {
+        videoPath = filePath;
+      } else {
+        imagePath = filePath;
+      }
+    }
+
+    const post = await postService.create(req.user._id, req.body, { imagePath, videoPath });
 
     res.status(201).json({
       success: true,
