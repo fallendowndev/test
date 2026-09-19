@@ -1,0 +1,12 @@
+{
+  "name": "just-blog",
+  "version": "1.0.0",
+  "description": "Just Blog! — Community Content Platform",
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
+    "start": "concurrently \"npm run start --prefix backend\" \"npm run start --prefix frontend\""
+  },
+  "dependencies": {
+    "concurrently": "^9.2.4"
+  }
+}
