@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: #0079d3;
+  --color-primary-hover: #006cbd;
+  --color-upvote: #ff4500;
+  --color-downvote: #7193ff;
+  --color-border: #edeff1;
+  --color-border-hover: #898989;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f8f9fa;
+  --color-muted: #7c7c7c;
+  --color-danger: #ea0027;
+  --color-danger-hover: #cc0022;
+  --color-success: #46d160;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+:root {
+  --background: #dae0e6;
+  --foreground: #1c1c1c;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Utility classes for common patterns */
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+}
+
+.card:hover {
+  border-color: var(--color-border-hover);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* Override focus styles */
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(0, 121, 211, 0.15);
+}
